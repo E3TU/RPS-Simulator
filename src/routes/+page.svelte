@@ -339,16 +339,6 @@
 		padding-bottom: 1.5rem;
 	}
 
-	.eyebrow {
-		margin: 0 0 0.55rem;
-		font-family: var(--font-mono);
-		font-size: 0.7rem;
-		font-weight: 500;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: var(--accent);
-	}
-
 	h1 {
 		margin: 0;
 		font-size: clamp(2.1rem, 5.2vw, 3.9rem);
@@ -657,19 +647,6 @@
 		border: 3px solid var(--surface);
 		border-radius: 50%;
 		background: var(--accent);
-	}
-
-	.foot {
-		margin-top: 3rem;
-	}
-
-	.foot p {
-		max-width: 60ch;
-		margin: 0;
-		font-size: 0.82rem;
-		line-height: 1.65;
-		color: var(--text-faint);
-		text-wrap: pretty;
 	}
 
 	@keyframes rise {
