@@ -1,56 +1,26 @@
-# sv
+# RPS Ecosystem Simulator
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A rock-paper-scissors ecosystem simulator built with SvelteKit. 150 entities move inside a closed arena, and every collision between two different species converts the loser to the winner's species, so the population stays at 150 while the cycle rotates.
 
-## Creating a project
+Built with Svelte 5 (runes), SvelteKit, TypeScript and Vite. No simulation, animation or charting libraries — the whole simulation runs on a single 2D canvas.
 
-If you're seeing this, you've probably already done this step. Congrats!
+![RPS Ecosystem Simulator](screenshot.png)
 
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
+## Run it locally
 
 ```sh
-# recreate this project
-npx sv@1.1.1 create --template minimal --types ts --add prettier --install npm rps-simulator
-```
-
-## Adding features
-
-Add features to your project with `sv add`:
-
-```sh
-npx sv add
-```
-
-For example, to add Tailwind CSS:
-
-```sh
-npx sv add tailwindcss
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+Then open http://localhost:5173.
 
-To create a production version of your app:
+## Stack
 
-```sh
-npm run build
-```
+- [Svelte 5](https://svelte.dev) with runes (`$state`) for reactive UI
+- [SvelteKit](https://svelte.dev/docs/kit) for routing and SSR
+- TypeScript
 
-You can preview the production build with `npm run preview`.
+## License
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+[MIT](LICENSE)
