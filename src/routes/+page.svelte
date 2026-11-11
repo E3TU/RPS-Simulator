@@ -25,6 +25,8 @@
 	const total = 150;
 	const radius = 13;
 	const step = 1 / 60;
+	const entitySpeed = 60;
+	const turnDegrees = 25;
 
 	const types: EntityType[] = ['rock', 'paper', 'scissors'];
 
@@ -42,15 +44,30 @@
 	let lastTime = 0;
 	let accumulator = 0;
 	let frameIndex = 0;
+	let recount = false;
 
 	function randomEntity(type: EntityType): Entity {
+		const angle = Math.random() * Math.PI * 2;
+
 		return {
 			x: radius + Math.random() * Math.max(0, width - radius * 2),
 			y: radius + Math.random() * Math.max(0, height - radius * 2),
-			vx: (Math.random() - 0.5) * 100,
-			vy: (Math.random() - 0.5) * 100,
+			vx: Math.cos(angle) * entitySpeed,
+			vy: Math.sin(angle) * entitySpeed,
 			type
 		};
+	}
+
+	// Rotate heading toward the nudge by at most turnDegrees, keeping speed fixed.
+	function steer(e: Entity, ax: number, ay: number): void {
+		const heading = Math.atan2(e.vy, e.vx);
+		const target = Math.atan2(ay, ax);
+		const delta = Math.atan2(Math.sin(target - heading), Math.cos(target - heading));
+		const maxTurn = (turnDegrees * Math.PI) / 180;
+		const angle = heading + Math.max(-maxTurn, Math.min(maxTurn, delta));
+
+		e.vx = Math.cos(angle) * entitySpeed;
+		e.vy = Math.sin(angle) * entitySpeed;
 	}
 
 	function getCounts(): Counts {
@@ -65,6 +82,7 @@
 		entities = Array.from({ length: total }, (_, i) => randomEntity(types[i % types.length]));
 
 		counts = getCounts();
+		recount = false;
 		accumulator = 0;
 		lastTime = 0;
 		draw();
@@ -120,15 +138,14 @@
 				if (dx * dx + dy * dy < minDistance * minDistance) {
 					const winningType = winner(a.type, b.type);
 
-					if (winningType) {
-						a.type = winningType;
-						b.type = winningType;
-					}
+					if (!winningType) continue;
 
-					a.vx *= -1;
-					a.vy *= -1;
-					b.vx *= -1;
-					b.vy *= -1;
+					const loser = a.type === winningType ? b : a;
+					loser.type = winningType;
+					recount = true;
+
+					steer(a, b.x - a.x, b.y - a.y);
+					steer(b, a.x - b.x, a.y - b.y);
 				}
 			}
 		}
@@ -172,7 +189,10 @@
 			accumulator -= step;
 		}
 
-		if (++frameIndex % 6 === 0) counts = getCounts();
+		if (recount) {
+			counts = getCounts();
+			recount = false;
+		} else if (++frameIndex % 6 === 0) counts = getCounts();
 		draw();
 
 		frame = requestAnimationFrame(loop);
@@ -268,7 +288,8 @@
 
 	<p class="subtitle">
 		Three species, one arena. Rock crushes scissors, scissors cuts paper, paper wraps rock — and
-		every collision rewrites one of them. Every contact converts the loser. Populations drift toward whoever lands the last hit.
+		every collision rewrites one of them. Every contact converts the loser. Populations drift toward
+		whoever lands the last hit.
 	</p>
 
 	<section class="arena" id="arena" aria-label="Simulation arena">
@@ -279,7 +300,7 @@
 		<article class="species rock">
 			<p class="label"><span aria-hidden="true">🪨</span> Rock</p>
 			<p class="value">{counts.rock}</p>
-			<div class="meter" aria-hidden="true">
+			<div class="meter" aria-hidden="true" data-empty={counts.rock === 0}>
 				<span style:transform="scaleX({counts.rock / total})"></span>
 			</div>
 		</article>
@@ -287,7 +308,7 @@
 		<article class="species paper">
 			<p class="label"><span aria-hidden="true">📄</span> Paper</p>
 			<p class="value">{counts.paper}</p>
-			<div class="meter" aria-hidden="true">
+			<div class="meter" aria-hidden="true" data-empty={counts.paper === 0}>
 				<span style:transform="scaleX({counts.paper / total})"></span>
 			</div>
 		</article>
@@ -295,7 +316,7 @@
 		<article class="species scissors">
 			<p class="label"><span aria-hidden="true">✂️</span> Scissors</p>
 			<p class="value">{counts.scissors}</p>
-			<div class="meter" aria-hidden="true">
+			<div class="meter" aria-hidden="true" data-empty={counts.scissors === 0}>
 				<span style:transform="scaleX({counts.scissors / total})"></span>
 			</div>
 		</article>
@@ -457,6 +478,10 @@
 		border-radius: inherit;
 		transform-origin: left center;
 		transition: transform 220ms linear;
+	}
+
+	.meter[data-empty='true'] span {
+		visibility: hidden;
 	}
 
 	.rock .value {
