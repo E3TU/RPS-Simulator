@@ -1,9 +1,97 @@
-*{
-    margin: 0;
-    padding: 0;
+:root {
+	--bg: #0d1117;
+	--bg-deep: #080b0f;
+	--surface: #161d24;
+	--surface-hover: #1e272f;
+	--line: rgba(255, 255, 255, 0.08);
+
+	--text: #f2f7fb;
+	--text-dim: #b3c1cf;
+	--text-faint: #7f8e9c;
+
+	--accent: #6fd3a0;
+	--accent-fill: #63c795;
+	--accent-hover: #7ee0ad;
+
+	--rock: #c49a5c;
+	--paper: #86a7c9;
+	--scissors: #c2766a;
+
+	--font-display: 'Sora', 'Segoe UI', system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+	--z-grain: 100;
+	--z-skip: 200;
+
+	color-scheme: dark;
 }
 
-body{
-    display: flex;
-    justify-content: center;
+* {
+	box-sizing: border-box;
+}
+
+html {
+	scroll-behavior: smooth;
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	min-height: 100dvh;
+	background:
+		radial-gradient(900px 460px at 50% -12%, rgba(111, 211, 160, 0.05), transparent 70%), var(--bg);
+	color: var(--text);
+	font-family: var(--font-display);
+	font-feature-settings: 'ss01';
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+
+body::after {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: var(--z-grain);
+	pointer-events: none;
+	opacity: 0.018;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+	background: rgba(111, 211, 160, 0.22);
+	color: var(--text);
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 3px;
+	border-radius: 6px;
+}
+
+.skip-link {
+	position: absolute;
+	left: -9999px;
+	top: 12px;
+	z-index: var(--z-skip);
+	padding: 10px 16px;
+	background: var(--surface);
+	color: var(--text);
+	border-radius: 8px;
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+}
+
+.skip-link:focus {
+	left: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
 }

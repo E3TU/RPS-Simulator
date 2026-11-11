@@ -1,448 +1,742 @@
-
 <script lang="ts">
-  import { onMount } from 'svelte';
+	import { onMount } from 'svelte';
 
-  type EntityType = 'rock' | 'paper' | 'scissors';
+	type EntityType = 'rock' | 'paper' | 'scissors';
 
-  type Entity = {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    type: EntityType;
-  };
+	type Entity = {
+		x: number;
+		y: number;
+		vx: number;
+		vy: number;
+		type: EntityType;
+	};
 
-  type Counts = Record<EntityType, number>;
+	type Counts = Record<EntityType, number>;
 
-  let canvas: HTMLCanvasElement;
-  let running = $state(false);
-  let counts = $state<Counts>({
-    rock: 0,
-    paper: 0,
-    scissors: 0
-  });
-  let speed = $state(1);
+	let canvas: HTMLCanvasElement;
+	let running = $state(false);
+	let counts = $state<Counts>({
+		rock: 0,
+		paper: 0,
+		scissors: 0
+	});
+	let speed = $state(1);
 
-  const total = 150;
-  const radius = 13;
-  const step = 1 / 60;
+	const total = 150;
+	const radius = 13;
+	const step = 1 / 60;
 
-  const types: EntityType[] = ['rock', 'paper', 'scissors'];
+	const types: EntityType[] = ['rock', 'paper', 'scissors'];
 
-  const icons: Record<EntityType, string> = {
-    rock: '🪨',
-    paper: '📄',
-    scissors: '✂️'
-  };
+	const icons: Record<EntityType, string> = {
+		rock: '🪨',
+		paper: '📄',
+		scissors: '✂️'
+	};
 
-  let entities: Entity[] = [];
-  let ctx: CanvasRenderingContext2D | null = null;
-  let width = 800;
-  let height = 500;
-  let frame: number | undefined;
-  let lastTime = 0;
-  let accumulator = 0;
+	let entities: Entity[] = [];
+	let ctx: CanvasRenderingContext2D | null = null;
+	let width = 800;
+	let height = 500;
+	let frame: number | undefined;
+	let lastTime = 0;
+	let accumulator = 0;
+	let frameIndex = 0;
 
-  function randomEntity(type: EntityType): Entity {
-    return {
-      x: radius + Math.random() * Math.max(0, width - radius * 2),
-      y: radius + Math.random() * Math.max(0, height - radius * 2),
-      vx: (Math.random() - 0.5) * 100,
-      vy: (Math.random() - 0.5) * 100,
-      type
-    };
-  }
+	function randomEntity(type: EntityType): Entity {
+		return {
+			x: radius + Math.random() * Math.max(0, width - radius * 2),
+			y: radius + Math.random() * Math.max(0, height - radius * 2),
+			vx: (Math.random() - 0.5) * 100,
+			vy: (Math.random() - 0.5) * 100,
+			type
+		};
+	}
 
-  function getCounts(): Counts {
-    return {
-      rock: entities.filter((e) => e.type === 'rock').length,
-      paper: entities.filter((e) => e.type === 'paper').length,
-      scissors: entities.filter((e) => e.type === 'scissors').length
-    };
-  }
+	function getCounts(): Counts {
+		return {
+			rock: entities.filter((e) => e.type === 'rock').length,
+			paper: entities.filter((e) => e.type === 'paper').length,
+			scissors: entities.filter((e) => e.type === 'scissors').length
+		};
+	}
 
-  function reset(): void {
-    entities = Array.from({ length: total }, (_, i) =>
-      randomEntity(types[i % types.length])
-    );
+	function reset(): void {
+		entities = Array.from({ length: total }, (_, i) => randomEntity(types[i % types.length]));
 
-    counts = getCounts();
-    accumulator = 0;
-    lastTime = 0;
-    draw();
-  }
+		counts = getCounts();
+		accumulator = 0;
+		lastTime = 0;
+		draw();
+	}
 
-  // A beats B, B beats C, C beats A.
-  function winner(
-    a: EntityType,
-    b: EntityType
-  ): EntityType | null {
-    if (a === b) return null;
+	function winner(a: EntityType, b: EntityType): EntityType | null {
+		if (a === b) return null;
 
-    if (
-      (a === 'rock' && b === 'scissors') ||
-      (a === 'scissors' && b === 'paper') ||
-      (a === 'paper' && b === 'rock')
-    ) {
-      return a;
-    }
+		if (
+			(a === 'rock' && b === 'scissors') ||
+			(a === 'scissors' && b === 'paper') ||
+			(a === 'paper' && b === 'rock')
+		) {
+			return a;
+		}
 
-    return b;
-  }
+		return b;
+	}
 
-  function update(dt: number): void {
-    for (const e of entities) {
-      e.x += e.vx * dt * speed;
-      e.y += e.vy * dt * speed;
+	function update(dt: number): void {
+		for (const e of entities) {
+			e.x += e.vx * dt * speed;
+			e.y += e.vy * dt * speed;
 
-      if (e.x < radius) {
-        e.x = radius;
-        e.vx = Math.abs(e.vx);
-      } else if (e.x > width - radius) {
-        e.x = width - radius;
-        e.vx = -Math.abs(e.vx);
-      }
+			if (e.x < radius) {
+				e.x = radius;
+				e.vx = Math.abs(e.vx);
+			} else if (e.x > width - radius) {
+				e.x = width - radius;
+				e.vx = -Math.abs(e.vx);
+			}
 
-      if (e.y < radius) {
-        e.y = radius;
-        e.vy = Math.abs(e.vy);
-      } else if (e.y > height - radius) {
-        e.y = height - radius;
-        e.vy = -Math.abs(e.vy);
-      }
-    }
+			if (e.y < radius) {
+				e.y = radius;
+				e.vy = Math.abs(e.vy);
+			} else if (e.y > height - radius) {
+				e.y = height - radius;
+				e.vy = -Math.abs(e.vy);
+			}
+		}
 
-    // Resolve collisions.
-    for (let i = 0; i < entities.length; i++) {
-      for (let j = i + 1; j < entities.length; j++) {
-        const a = entities[i];
-        const b = entities[j];
+		for (let i = 0; i < entities.length; i++) {
+			for (let j = i + 1; j < entities.length; j++) {
+				const a = entities[i];
+				const b = entities[j];
 
-        if (a.type === b.type) continue;
+				if (a.type === b.type) continue;
 
-        const dx = a.x - b.x;
-        const dy = a.y - b.y;
-        const minDistance = radius * 2;
+				const dx = a.x - b.x;
+				const dy = a.y - b.y;
+				const minDistance = radius * 2;
 
-        if (dx * dx + dy * dy < minDistance * minDistance) {
-          const winningType = winner(a.type, b.type);
+				if (dx * dx + dy * dy < minDistance * minDistance) {
+					const winningType = winner(a.type, b.type);
 
-          if (winningType) {
-            a.type = winningType;
-            b.type = winningType;
-          }
+					if (winningType) {
+						a.type = winningType;
+						b.type = winningType;
+					}
 
-          // Reverse movement to help separate colliding entities.
-          a.vx *= -1;
-          a.vy *= -1;
-          b.vx *= -1;
-          b.vy *= -1;
-        }
-      }
-    }
-  }
+					a.vx *= -1;
+					a.vy *= -1;
+					b.vx *= -1;
+					b.vy *= -1;
+				}
+			}
+		}
+	}
 
-  function draw(): void {
-    if (!ctx) return;
+	function draw(): void {
+		if (!ctx) return;
 
-    ctx.clearRect(0, 0, width, height);
-    ctx.font = '22px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+		ctx.clearRect(0, 0, width, height);
 
-    for (const e of entities) {
-      ctx.fillText(icons[e.type], e.x, e.y);
-    }
-  }
+		ctx.save();
+		ctx.fillStyle = 'rgba(255, 255, 255, 0.045)';
+		const gridStep = 28;
+		for (let x = gridStep; x < width; x += gridStep) {
+			for (let y = gridStep; y < height; y += gridStep) {
+				ctx.fillRect(x, y, 1, 1);
+			}
+		}
+		ctx.restore();
 
-  function loop(time: number): void {
-    if (!running) return;
+		ctx.fillStyle = '#ffffff';
+		ctx.font = '24px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
 
-    const dt = Math.min(
-      lastTime === 0 ? 0 : (time - lastTime) / 1000,
-      0.05
-    );
+		for (const e of entities) {
+			ctx.fillText(icons[e.type], e.x, e.y);
+		}
+	}
 
-    lastTime = time;
-    accumulator += dt;
+	function loop(time: number): void {
+		if (!running) return;
 
-    // Fixed-step simulation for consistent movement.
-    while (accumulator >= step) {
-      update(step);
-      accumulator -= step;
-    }
+		const dt = Math.min(lastTime === 0 ? 0 : (time - lastTime) / 1000, 0.05);
 
-    counts = getCounts();
-    draw();
+		lastTime = time;
+		accumulator += dt;
 
-    frame = requestAnimationFrame(loop);
-  }
+		while (accumulator >= step) {
+			update(step);
+			accumulator -= step;
+		}
 
-  function start(): void {
-    if (running) return;
+		if (++frameIndex % 6 === 0) counts = getCounts();
+		draw();
 
-    running = true;
-    lastTime = 0;
-    frame = requestAnimationFrame(loop);
-  }
+		frame = requestAnimationFrame(loop);
+	}
 
-  function pause(): void {
-    running = false;
+	function start(): void {
+		if (running) return;
 
-    if (frame !== undefined) {
-      cancelAnimationFrame(frame);
-      frame = undefined;
-    }
-  }
+		running = true;
+		lastTime = 0;
+		accumulator = 0;
+		counts = getCounts();
+		frame = requestAnimationFrame(loop);
+	}
 
-  onMount(() => {
-    const context = canvas.getContext('2d');
+	function pause(): void {
+		running = false;
 
-    if (!context) return;
+		if (frame !== undefined) {
+			cancelAnimationFrame(frame);
+			frame = undefined;
+		}
+	}
 
-    ctx = context;
+	onMount(() => {
+		const context = canvas.getContext('2d');
 
-    function resize(): void {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
+		if (!context) return;
 
-      width = rect.width;
-      height = rect.height;
+		ctx = context;
 
-      canvas.width = Math.round(width * dpr);
-      canvas.height = Math.round(height * dpr);
+		function resize(): void {
+			const rect = canvas.getBoundingClientRect();
+			const dpr = window.devicePixelRatio || 1;
 
-      ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+			width = rect.width;
+			height = rect.height;
 
-      // Keep entities inside the resized canvas.
-      for (const e of entities) {
-        e.x = Math.max(radius, Math.min(width - radius, e.x));
-        e.y = Math.max(radius, Math.min(height - radius, e.y));
-      }
+			canvas.width = Math.round(width * dpr);
+			canvas.height = Math.round(height * dpr);
 
-      if (entities.length === 0) {
-        reset();
-      } else {
-        draw();
-      }
-    }
+			ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas);
+			for (const e of entities) {
+				e.x = Math.max(radius, Math.min(width - radius, e.x));
+				e.y = Math.max(radius, Math.min(height - radius, e.y));
+			}
 
-    resize();
+			if (entities.length === 0) {
+				reset();
+			} else {
+				draw();
+			}
+		}
 
-    return () => {
-      pause();
-      observer.disconnect();
-      ctx = null;
-    };
-  });
+		const observer = new ResizeObserver(resize);
+		observer.observe(canvas);
+
+		resize();
+
+		return () => {
+			pause();
+			observer.disconnect();
+			ctx = null;
+		};
+	});
 </script>
 
 <svelte:head>
-  <title>RPS Ecosystem Simulator</title>
-  <meta
-    name="description"
-    content="Watch rock, paper, and scissors compete in an animated ecosystem."
-  />
+	<title>RPS Ecosystem Simulator</title>
+	<meta
+		name="description"
+		content="Watch rock, paper, and scissors compete in an animated ecosystem."
+	/>
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="RPS Ecosystem — field simulator" />
+	<meta
+		property="og:description"
+		content="150 entities, one closed arena, three species that hunt each other in a loop."
+	/>
+	<meta name="twitter:card" content="summary" />
+	<meta name="theme-color" content="#0d1117" />
 </svelte:head>
 
+<a class="skip-link" href="#arena">Skip to simulation</a>
+
 <main>
-  <h1>RPS Ecosystem</h1>
-  <p class="subtitle">
-    Watch rock, paper, and scissors battle for dominance.
-  </p>
+	<header class="masthead">
+		<div class="identity">
+			<h1>RPS Ecosystem</h1>
+		</div>
+	</header>
 
-  <section class="stats" aria-label="Population counts">
-    <div class="rock">
-      <span>🪨 Rock</span>
-      <strong>{counts.rock}</strong>
-    </div>
+	<p class="subtitle">
+		Three species, one arena. Rock crushes scissors, scissors cuts paper, paper wraps rock — and
+		every collision rewrites one of them. Every contact converts the loser. Populations drift toward whoever lands the last hit.
+	</p>
 
-    <div class="paper">
-      <span>📄 Paper</span>
-      <strong>{counts.paper}</strong>
-    </div>
+	<section class="arena" id="arena" aria-label="Simulation arena">
+		<canvas bind:this={canvas} aria-label="Animated rock-paper-scissors simulation"></canvas>
+	</section>
 
-    <div class="scissors">
-      <span>✂️ Scissors</span>
-      <strong>{counts.scissors}</strong>
-    </div>
-  </section>
+	<section class="readout" aria-label="Population readout">
+		<article class="species rock">
+			<p class="label"><span aria-hidden="true">🪨</span> Rock</p>
+			<p class="value">{counts.rock}</p>
+			<div class="meter" aria-hidden="true">
+				<span style:transform="scaleX({counts.rock / total})"></span>
+			</div>
+		</article>
 
-  <div class="arena">
-    <canvas
-      bind:this={canvas}
-      aria-label="Animated rock-paper-scissors simulation"
-    ></canvas>
-  </div>
+		<article class="species paper">
+			<p class="label"><span aria-hidden="true">📄</span> Paper</p>
+			<p class="value">{counts.paper}</p>
+			<div class="meter" aria-hidden="true">
+				<span style:transform="scaleX({counts.paper / total})"></span>
+			</div>
+		</article>
 
-  <section class="controls" aria-label="Simulation controls">
-    <button onclick={start} disabled={running}>
-      ▶ Start
-    </button>
+		<article class="species scissors">
+			<p class="label"><span aria-hidden="true">✂️</span> Scissors</p>
+			<p class="value">{counts.scissors}</p>
+			<div class="meter" aria-hidden="true">
+				<span style:transform="scaleX({counts.scissors / total})"></span>
+			</div>
+		</article>
+	</section>
 
-    <button onclick={pause} disabled={!running}>
-      ⏸ Pause
-    </button>
+	<section class="controls" aria-label="Simulation controls">
+		<div class="buttons">
+			<button class="primary" onclick={start} disabled={running}>
+				<span aria-hidden="true">▶</span> Start
+			</button>
 
-    <button onclick={reset}>
-      ↻ Reset
-    </button>
+			<button onclick={pause} disabled={!running}>
+				<span aria-hidden="true">❚❚</span> Pause
+			</button>
 
-    <label>
-      <span>Speed: {speed.toFixed(1)}×</span>
-      <input
-        type="range"
-        min="0.5"
-        max="4"
-        step="0.5"
-        bind:value={speed}
-      />
-    </label>
-  </section>
+			<button class="ghost" onclick={reset}>
+				<span aria-hidden="true">↺</span> Reset
+			</button>
+		</div>
+
+		<label class="speed">
+			<span class="speed-label">Speed</span>
+			<input type="range" min="0.5" max="4" step="0.5" bind:value={speed} style:--v={speed} />
+			<span class="speed-value">{speed.toFixed(1)}×</span>
+		</label>
+	</section>
 </main>
 
 <style>
-  :global(body) {
-    margin: 0;
-    background: #0b1020;
-    color: #f1f5f9;
-    font-family: system-ui, sans-serif;
-  }
+	main {
+		width: min(1240px, 100% - 2.5rem);
+		margin: 0 auto;
+		padding: 3.5rem 0 4.5rem;
+	}
 
-  main {
-    max-width: 900px;
-    margin: 40px auto;
-    padding: 20px;
-  }
+	.masthead {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: end;
+		gap: 1.5rem;
+		padding-bottom: 1.5rem;
+	}
 
-  h1 {
-    margin-bottom: 4px;
-    font-size: 2.2rem;
-  }
+	.eyebrow {
+		margin: 0 0 0.55rem;
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		font-weight: 500;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--accent);
+	}
 
-  .subtitle {
-    color: #94a3b8;
-    margin-bottom: 28px;
-  }
+	h1 {
+		margin: 0;
+		font-size: clamp(2.1rem, 5.2vw, 3.9rem);
+		font-weight: 600;
+		line-height: 0.98;
+		letter-spacing: -0.035em;
+		text-wrap: balance;
+	}
 
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin-bottom: 18px;
-  }
+	.subtitle {
+		max-width: 58ch;
+		margin: 1.1rem 0 2rem;
+		color: var(--text-dim);
+		font-size: 1rem;
+		line-height: 1.6;
+		text-wrap: pretty;
+	}
 
-  .stats div {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 18px;
-    border-radius: 14px;
-    background: #151d30;
-    border: 1px solid #293449;
-  }
+	.arena {
+		position: relative;
+		border-radius: 20px;
+		background: var(--bg-deep);
+		box-shadow:
+			0 0 0 1px rgba(255, 255, 255, 0.1),
+			0 30px 60px -30px rgba(0, 0, 0, 0.85);
+		overflow: hidden;
+		isolation: isolate;
+		animation: rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
 
-  .stats strong {
-    font-size: 1.8rem;
-    font-variant-numeric: tabular-nums;
-  }
+	.arena::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: 2;
+		border-radius: inherit;
+		box-shadow: inset 0 0 90px rgba(4, 9, 12, 0.65);
+		pointer-events: none;
+	}
 
-  .rock {
-    color: #fbbf24;
-  }
+	canvas {
+		display: block;
+		width: 100%;
+		height: clamp(320px, 52vh, 560px);
+	}
 
-  .paper {
-    color: #60a5fa;
-  }
+	.readout {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.5rem;
+		margin-top: 1.5rem;
+	}
 
-  .scissors {
-    color: #fb7185;
-  }
+	.species {
+		display: grid;
+		grid-template-areas:
+			'label'
+			'value'
+			'meter';
+		grid-template-columns: 1fr;
+		align-items: baseline;
+		gap: 0.35rem 0.75rem;
+		padding: 1.25rem 1.4rem 1.35rem;
+		border-radius: 14px;
+		background: var(--surface);
+		animation: rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
 
-  .arena {
-    overflow: hidden;
-    border: 1px solid #334155;
-    border-radius: 16px;
-    background: #10182a;
-  }
+	.species:nth-child(2) {
+		animation-delay: 70ms;
+	}
 
-  canvas {
-    display: block;
-    width: 100%;
-    height: 500px;
-  }
+	.species:nth-child(3) {
+		animation-delay: 140ms;
+	}
 
-  .controls {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 18px;
-  }
+	.label {
+		grid-area: label;
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		margin: 0;
+		font-size: 0.86rem;
+		font-weight: 500;
+		color: var(--text-dim);
+	}
 
-  button {
-    background: #293449;
-    border: 1px solid #475569;
-    color: white;
-    padding: 11px 16px;
-    border-radius: 9px;
-    cursor: pointer;
-  }
+	.label span {
+		font-size: 1.05rem;
+		line-height: 1;
+	}
 
-  button:hover:not(:disabled) {
-    background: #37465f;
-  }
+	.value {
+		grid-area: value;
+		margin: 0.2rem 0 0;
+		font-family: var(--font-mono);
+		font-size: clamp(2rem, 3.4vw, 2.75rem);
+		font-weight: 500;
+		line-height: 1;
+		letter-spacing: -0.02em;
+		font-variant-numeric: tabular-nums;
+	}
 
-  button:disabled {
-    opacity: 0.45;
-    cursor: default;
-  }
+	.meter {
+		grid-area: meter;
+		height: 3px;
+		margin-top: 0.9rem;
+		border-radius: 3px;
+		background: rgba(255, 255, 255, 0.06);
+		overflow: hidden;
+	}
 
-  label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-left: auto;
-  }
+	.meter span {
+		display: block;
+		height: 100%;
+		border-radius: inherit;
+		transform-origin: left center;
+		transition: transform 220ms linear;
+	}
 
-  input {
-    width: 100px;
-    accent-color: #60a5fa;
-  }
+	.rock .value {
+		color: var(--rock);
+	}
 
-  @media (max-width: 550px) {
-    main {
-      margin: 20px auto;
-      padding: 14px;
-    }
+	.paper .value {
+		color: var(--paper);
+	}
 
-    h1 {
-      font-size: 1.8rem;
-    }
+	.scissors .value {
+		color: var(--scissors);
+	}
 
-    .stats {
-      gap: 8px;
-    }
+	.rock .meter span {
+		background: var(--rock);
+	}
 
-    .stats div {
-      padding: 10px;
-      gap: 8px;
-      font-size: 0.9rem;
-    }
+	.paper .meter span {
+		background: var(--paper);
+	}
 
-    .stats strong {
-      font-size: 1.4rem;
-    }
+	.scissors .meter span {
+		background: var(--scissors);
+	}
 
-    canvas {
-      height: 400px;
-    }
+	.controls {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1.5rem;
+		margin-top: 1.75rem;
+	}
 
-    label {
-      margin-left: 0;
-    }
-  }
+	.buttons {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.6rem;
+		padding: 0.82rem 1.4rem;
+		border: 0;
+		border-radius: 10px;
+		background: var(--surface);
+		color: var(--text-dim);
+		font-family: var(--font-mono);
+		font-size: 0.8rem;
+		letter-spacing: 0.04em;
+		cursor: pointer;
+		transition:
+			background 200ms ease,
+			color 200ms ease,
+			transform 120ms ease;
+	}
+
+	button span {
+		font-size: 0.72em;
+		opacity: 0.85;
+	}
+
+	button:hover:not(:disabled) {
+		background: var(--surface-hover);
+		color: var(--text);
+	}
+
+	button:active:not(:disabled) {
+		transform: scale(0.98) translateY(1px);
+	}
+
+	button.primary {
+		background: var(--accent-fill);
+		color: #04120c;
+		font-weight: 500;
+	}
+
+	button.primary:hover:not(:disabled) {
+		background: var(--accent-hover);
+		color: #04120c;
+	}
+
+	button.primary span {
+		opacity: 1;
+	}
+
+	button.ghost {
+		background: transparent;
+		color: var(--text-faint);
+	}
+
+	button.ghost:hover:not(:disabled) {
+		background: var(--surface);
+		color: var(--text);
+	}
+
+	button:disabled {
+		opacity: 0.38;
+		cursor: default;
+	}
+
+	.speed {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 0.55rem 0.9rem 0.55rem 1.1rem;
+		border-radius: 12px;
+		background: var(--surface);
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text-faint);
+	}
+
+	.speed-value {
+		min-width: 3.6ch;
+		padding-left: 0.9rem;
+		border-left: 1px solid var(--line);
+		color: var(--text);
+		font-variant-numeric: tabular-nums;
+		text-transform: none;
+		text-align: right;
+	}
+
+	input[type='range'] {
+		--fill: calc((var(--v, 1) - 0.5) / 3.5 * 100%);
+		-webkit-appearance: none;
+		appearance: none;
+		width: clamp(140px, 20vw, 220px);
+		height: 34px;
+		margin: 0;
+		background: transparent;
+		cursor: pointer;
+	}
+
+	input[type='range']::-webkit-slider-runnable-track {
+		height: 6px;
+		border-radius: 6px;
+		background: linear-gradient(
+			to right,
+			var(--accent) 0 var(--fill),
+			rgba(255, 255, 255, 0.09) var(--fill) 100%
+		);
+	}
+
+	input[type='range']::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 18px;
+		height: 18px;
+		margin-top: -6px;
+		border: 3px solid var(--surface);
+		border-radius: 50%;
+		background: var(--accent);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+		transition:
+			transform 160ms ease,
+			box-shadow 160ms ease;
+	}
+
+	input[type='range']:hover::-webkit-slider-thumb {
+		transform: scale(1.12);
+		box-shadow: 0 0 0 6px rgba(111, 211, 160, 0.14);
+	}
+
+	input[type='range']:active::-webkit-slider-thumb {
+		transform: scale(1.18);
+	}
+
+	input[type='range']::-moz-range-track {
+		height: 6px;
+		border-radius: 6px;
+		background: rgba(255, 255, 255, 0.09);
+	}
+
+	input[type='range']::-moz-range-progress {
+		height: 6px;
+		border-radius: 6px;
+		background: var(--accent);
+	}
+
+	input[type='range']::-moz-range-thumb {
+		width: 12px;
+		height: 12px;
+		border: 3px solid var(--surface);
+		border-radius: 50%;
+		background: var(--accent);
+	}
+
+	.foot {
+		margin-top: 3rem;
+	}
+
+	.foot p {
+		max-width: 60ch;
+		margin: 0;
+		font-size: 0.82rem;
+		line-height: 1.65;
+		color: var(--text-faint);
+		text-wrap: pretty;
+	}
+
+	@keyframes rise {
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@media (max-width: 720px) {
+		main {
+			width: calc(100% - 1.75rem);
+			padding: 2rem 0 3rem;
+		}
+
+		.masthead {
+			grid-template-columns: 1fr;
+			align-items: start;
+			gap: 1rem;
+		}
+
+		.readout {
+			grid-template-columns: 1fr;
+			gap: 0.4rem;
+		}
+
+		.species {
+			grid-template-areas: 'label value' 'meter meter';
+			grid-template-columns: 1fr auto;
+			align-items: center;
+			padding: 0.95rem 1rem;
+		}
+
+		.value {
+			margin: 0;
+			font-size: 1.5rem;
+		}
+
+		.meter {
+			margin-top: 0.65rem;
+		}
+
+		.controls {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.buttons {
+			flex-wrap: wrap;
+		}
+
+		button {
+			flex: 1 1 auto;
+			justify-content: center;
+		}
+
+		.speed {
+			justify-content: space-between;
+		}
+
+		input[type='range'] {
+			flex: 1;
+			width: auto;
+		}
+	}
 </style>
